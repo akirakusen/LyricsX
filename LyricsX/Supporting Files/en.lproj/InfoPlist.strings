@@ -1,2 +1,2 @@
 
-"NSAppleEventsUsageDescription" = "LyricsX needs to know what song you're currently playing, to show lyrics accordingly.";
+"NSAppleEventsUsageDescription" = "LyricsX uses Automation to find music.youtube.com tabs in Google Chrome, read the current track, and control playback so it can display synchronized lyrics.";

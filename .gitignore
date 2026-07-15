@@ -1,1 +1,6 @@
 Product
+.build
+DerivedData
+.swiftpm
+Carthage/Build
+.codex-artifacts/

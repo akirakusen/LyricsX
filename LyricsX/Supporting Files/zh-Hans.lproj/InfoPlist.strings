@@ -1,1 +1,1 @@
-"NSAppleEventsUsageDescription" = "LyricsX 需要获取当前播放的音乐，并据此展示歌词";
+"NSAppleEventsUsageDescription" = "LyricsX 使用自动化权限查找 Google Chrome 中的 music.youtube.com 标签页，读取当前歌曲并控制播放，以显示同步歌词。";

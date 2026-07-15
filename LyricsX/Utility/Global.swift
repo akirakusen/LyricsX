@@ -8,24 +8,22 @@
 //
 
 import Cocoa
+import Combine
 import CXShim
 import GenericID
 import MusicPlayer
 
-typealias ObservableObject = CombineX.ObservableObject
-typealias Published = CombineX.Published
+typealias ObservableObject = Combine.ObservableObject
+typealias Published = Combine.Published
 
 let fontNameFallbackCountMax = 1
-// 7 days. after this period of time since the app built, the app is not considered as "in review".
-let masReviewPeriodLimit: TimeInterval = 60 * 60 * 24 * 7
 
-// NOTE: to build your own product, you need to replace the team identifier to yours
-// and do the same thing in LyricsXHelper
-let lyricsXGroupIdentifier = "3665V726AE.group.ddddxxx.LyricsX"
-let lyricsXHelperIdentifier = "ddddxxx.LyricsXHelper"
-let lyricsXErrorDomain = "ddddxxx.LyricsX"
+let lyricsXGroupIdentifier = "QU3VK35N64.group.com.akirakusen.LyricsX"
+let lyricsXHelperIdentifier = "com.akirakusen.LyricsXHelper"
+let lyricsXErrorDomain = "com.akirakusen.LyricsX"
 
 let crowdinProjectURL = URL(string: "https://crowdin.com/project/lyricsx")!
+let lyricsXReleasesURL = URL(string: "https://github.com/akirakusen/LyricsX/releases")!
 
 let defaults = UserDefaults.standard
 let groupDefaults = UserDefaults(suiteName: lyricsXGroupIdentifier)!
@@ -34,7 +32,6 @@ let workspaceNC = NSWorkspace.shared.notificationCenter
 let selectedPlayer = MusicPlayers.Selected.shared
 
 let isInSandbox = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
-let isFromMacAppStore = (try? Bundle.main.appStoreReceiptURL?.checkResourceIsReachable()) == true
 
 extension DispatchQueue {
     static let lyricsDisplay = DispatchQueue(label: "LyricsDisplay")
@@ -149,9 +146,6 @@ extension UserDefaults.DefaultsKeys {
     static let writeToiTunesAutomatically = Key<Bool>("WriteToiTunesAutomatically")
     
     static let globalLyricsOffset = Key<Int>("GlobalLyricsOffset")
-    
-    //
-    static let isInMASReview = Key<Bool?>("isInMASReview")
     
     static let launchHelperTime = Key<Date?>("launchHelperTime")
     

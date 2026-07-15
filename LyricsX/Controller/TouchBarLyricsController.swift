@@ -69,14 +69,14 @@ class TouchBarLyricsController: TouchBarSystemModalController {
 @available(OSX 10.12.2, *)
 private extension NSTouchBarItem.Identifier {
     
-    static let lyrics = NSTouchBarItem.Identifier("ddddxxx.LyricsX.touchBar.lyrics")
-    static let currentArtwork = NSTouchBarItem.Identifier("ddddxxx.LyricsX.touchBar.currentArtwork")
-    static let playbackControl = NSTouchBarItem.Identifier("ddddxxx.LyricsX.touchBar.playbackControl")
+    static let lyrics = NSTouchBarItem.Identifier("com.akirakusen.LyricsX.touchBar.lyrics")
+    static let currentArtwork = NSTouchBarItem.Identifier("com.akirakusen.LyricsX.touchBar.currentArtwork")
+    static let playbackControl = NSTouchBarItem.Identifier("com.akirakusen.LyricsX.touchBar.playbackControl")
     
-    static let systemTrayItem = NSTouchBarItem.Identifier("ddddxxx.LyricsX.touchBar.systemTrayItem")
+    static let systemTrayItem = NSTouchBarItem.Identifier("com.akirakusen.LyricsX.touchBar.systemTrayItem")
 }
 
 @available(OSX 10.12.2, *)
 extension NSTouchBar.CustomizationIdentifier {
-    static let main = NSTouchBar.CustomizationIdentifier("ddddxxx.LyricsX.touchBar.customization.main")
+    static let main = NSTouchBar.CustomizationIdentifier("com.akirakusen.LyricsX.touchBar.customization.main")
 }

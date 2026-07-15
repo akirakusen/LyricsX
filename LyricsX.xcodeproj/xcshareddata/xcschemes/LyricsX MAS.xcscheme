@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BB4141A91E458BA800A51775"
+               BlueprintIdentifier = "BB50786222014C3900B695C3"
                BuildableName = "LyricsX.app"
-               BlueprintName = "LyricsX"
+               BlueprintName = "LyricsX MAS"
                ReferencedContainer = "container:LyricsX.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -30,9 +30,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BB4141A91E458BA800A51775"
+            BlueprintIdentifier = "BB50786222014C3900B695C3"
             BuildableName = "LyricsX.app"
-            BlueprintName = "LyricsX"
+            BlueprintName = "LyricsX MAS"
             ReferencedContainer = "container:LyricsX.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -53,9 +53,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BB4141A91E458BA800A51775"
+            BlueprintIdentifier = "BB50786222014C3900B695C3"
             BuildableName = "LyricsX.app"
-            BlueprintName = "LyricsX"
+            BlueprintName = "LyricsX MAS"
             ReferencedContainer = "container:LyricsX.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -70,9 +70,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "BB4141A91E458BA800A51775"
+            BlueprintIdentifier = "BB50786222014C3900B695C3"
             BuildableName = "LyricsX.app"
-            BlueprintName = "LyricsX"
+            BlueprintName = "LyricsX MAS"
             ReferencedContainer = "container:LyricsX.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

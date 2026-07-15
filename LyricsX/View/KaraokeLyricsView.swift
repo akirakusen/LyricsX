@@ -18,7 +18,7 @@ class KaraokeLyricsView: NSView {
     @objc dynamic var isVertical = false {
         didSet {
             stackView.orientation = isVertical ? .horizontal : .vertical
-            (isVertical ? displayLine2 : displayLine1).map { stackView.insertArrangedSubview($0, at: 0) }
+            arrangeDisplayLines()
             updateFontSize()
         }
     }
@@ -56,8 +56,12 @@ class KaraokeLyricsView: NSView {
         super.init(frame: frameRect)
         wantsLayer = true
         addSubview(backgroundView)
+        backgroundView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
         backgroundView.addSubview(stackView)
         backgroundView.layer?.cornerRadius = 12
+        updateFontSize()
     }
     
     required init?(coder decoder: NSCoder) {
@@ -78,15 +82,8 @@ class KaraokeLyricsView: NSView {
 //        cornerRadius = font.pointSize / 2
     }
     
-    private func lyricsLabel(_ content: String) -> KaraokeLabel {
-        if let view = stackView.subviews.lazy.compactMap({ $0 as? KaraokeLabel }).first(where: { !stackView.arrangedSubviews.contains($0) }) {
-            view.alphaValue = 0
-            view.stringValue = content
-            view.removeProgressAnimation()
-            view.removeFromSuperview()
-            return view
-        }
-        return KaraokeLabel(labelWithString: content).then {
+    private func makeLyricsLabel(_ content: String) -> KaraokeLabel {
+        KaraokeLabel(labelWithString: content).then {
             $0.bind(\.font, to: self, withKeyPath: \.font)
             $0.bind(\.textColor, to: self, withKeyPath: \.textColor)
             $0.bind(\.progressColor, to: self, withKeyPath: \.progressColor)
@@ -96,57 +93,70 @@ class KaraokeLyricsView: NSView {
             $0.alphaValue = 0
         }
     }
+
+    private func takeLabel(
+        for content: String,
+        from reusableLabels: inout [KaraokeLabel]
+    ) -> KaraokeLabel {
+        if let index = reusableLabels.firstIndex(where: { $0.stringValue == content }) {
+            return reusableLabels.remove(at: index)
+        }
+        return makeLyricsLabel(content)
+    }
+
+    private func arrangeDisplayLines() {
+        stackView.arrangedSubviews.forEach {
+            stackView.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+
+        let state = TwoLineLyricsDisplayState(
+            currentLine: displayLine1?.stringValue ?? "",
+            nextLine: displayLine2?.stringValue ?? ""
+        )
+        for slot in state.arrangedSlots(isVertical: isVertical) {
+            let label = slot == .current ? displayLine1 : displayLine2
+            if let label {
+                stackView.addArrangedSubview(label)
+            }
+        }
+    }
     
     func displayLrc(_ firstLine: String, secondLine: String = "") {
-        var toBeHide = stackView.arrangedSubviews.compactMap { $0 as? KaraokeLabel }
-        var toBeShow: [NSTextField] = []
-        var shouldHideAll = false
-        
-        let index = isVertical ? 0 : 1
-        if firstLine.trimmingCharacters(in: .whitespaces).isEmpty {
-            displayLine1 = nil
-            shouldHideAll = true
-        } else if toBeHide.count == 2, toBeHide[index].stringValue == firstLine {
-            displayLine1 = toBeHide[index]
-            toBeHide.remove(at: index)
-        } else {
-            let label = lyricsLabel(firstLine)
-            displayLine1 = label
-            toBeShow.append(label)
+        let state = TwoLineLyricsDisplayState(
+            currentLine: firstLine,
+            nextLine: secondLine
+        )
+        var reusableLabels = [displayLine1, displayLine2].compactMap { $0 }
+        let currentLabel = state.currentLine.map {
+            takeLabel(for: $0, from: &reusableLabels)
         }
-        
-        if !secondLine.trimmingCharacters(in: .whitespaces).isEmpty {
-            let label = lyricsLabel(secondLine)
-            displayLine2 = label
-            toBeShow.append(label)
-        } else {
-            displayLine2 = nil
+        let nextLabel = state.nextLine.map {
+            takeLabel(for: $0, from: &reusableLabels)
         }
-        
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.25
-            context.allowsImplicitAnimation = true
-            context.timingFunction = .swiftOut
-            toBeHide.forEach {
-                stackView.removeArrangedSubview($0)
-                $0.isHidden = true
-                $0.alphaValue = 0
-                $0.removeProgressAnimation()
-            }
-            toBeShow.forEach {
-                if isVertical {
-                    stackView.insertArrangedSubview($0, at: 0)
-                } else {
-                    stackView.addArrangedSubview($0)
-                }
-                $0.isHidden = false
-                $0.alphaValue = 1
-            }
-            isHidden = shouldHideAll
-            layoutSubtreeIfNeeded()
-        }, completionHandler: {
-            self.mouseTest()
-        })
+
+        displayLine1 = currentLabel
+        displayLine2 = nextLabel
+
+        reusableLabels.forEach {
+            $0.isHidden = true
+            $0.alphaValue = 0
+            $0.removeProgressAnimation()
+        }
+        [currentLabel, nextLabel].compactMap { $0 }.forEach {
+            $0.removeProgressAnimation()
+        }
+
+        // Geometry must settle in one pass. Animating stack bounds can leave a
+        // vertical Core Text frame temporarily showing only the line's suffix.
+        arrangeDisplayLines()
+        [currentLabel, nextLabel].compactMap { $0 }.forEach {
+            $0.isHidden = false
+            $0.alphaValue = 1
+        }
+        isHidden = state.currentLine == nil
+        layoutSubtreeIfNeeded()
+        mouseTest()
     }
     
     // MARK: - Event

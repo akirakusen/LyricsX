@@ -52,8 +52,8 @@
 /* Class = "NSTableColumn"; headerCell.title = "Title"; ObjectID = "jWT-S5-YXM"; */
 "jWT-S5-YXM.headerCell.title" = "Título";
 
-/* Class = "NSMenuItem"; title = "Write to iTunes"; ObjectID = "kNl-ZO-aX6"; */
-"kNl-ZO-aX6.title" = "Gravar no iTunes";
+/* Class = "NSMenuItem"; title = "Write to Apple Music"; ObjectID = "kNl-ZO-aX6"; */
+"kNl-ZO-aX6.title" = "Gravar no Apple Music";
 
 /* Class = "NSMenuItem"; title = "Show Lyrics Window"; ObjectID = "kyJ-kV-2Du"; */
 "kyJ-kV-2Du.title" = "Mostrar Janela de Letras";
@@ -67,8 +67,8 @@
 /* Class = "NSMenuItem"; title = "About LyricsX"; ObjectID = "PdE-VG-JUC"; */
 "PdE-VG-JUC.title" = "Sobre LyricsX";
 
-/* Class = "NSMenuItem"; title = "Check For Update..."; ObjectID = "Piu-i2-JjD"; */
-"Piu-i2-JjD.title" = "Verificar Por Atualizações...";
+/* Class = "NSMenuItem"; title = "Open Releases..."; ObjectID = "Piu-i2-JjD"; */
+"Piu-i2-JjD.title" = "Abrir lançamentos...";
 
 /* Class = "NSButtonCell"; title = "Apply"; ObjectID = "RGl-MT-MQb"; */
 "RGl-MT-MQb.title" = "Aplicar";

@@ -20,7 +20,7 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     @objc dynamic var searchArtist = ""
     @objc dynamic var searchTitle = "" {
         didSet {
-            searchButton.isEnabled = !searchTitle.isEmpty
+            searchButton?.isEnabled = !searchTitle.isEmpty
         }
     }
     
@@ -48,18 +48,13 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     }
     
     override func viewWillAppear() {
-        self.reloadKeyword()
+        super.viewWillAppear()
+        reloadKeyword()
     }
     
     func reloadKeyword() {
         guard let track = selectedPlayer.currentTrack else {
-            searchCanceller?.cancel()
-            searchResult = []
-            searchArtist = ""
-            searchTitle = ""
-            artworkView.image = #imageLiteral(resourceName: "missing_artwork")
-            lyricsPreviewTextView.string = " "
-            tableView.reloadData()
+            clearSearchState()
             return
         }
         let artist = track.artist ?? ""
@@ -252,5 +247,20 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
             }
         }
     }
-    
+
+    private func clearSearchState() {
+        searchCanceller?.cancel()
+        searchCanceller = nil
+        progressObservation?.invalidate()
+        progressObservation = nil
+        searchRequest = nil
+        searchResult = []
+        searchArtist = ""
+        searchTitle = ""
+        artworkView.image = #imageLiteral(resourceName: "missing_artwork")
+        lyricsPreviewTextView.string = " "
+        progressIndicator.stopAnimation(nil)
+        tableView.reloadData()
+    }
+
 }

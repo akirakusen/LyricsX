@@ -22,8 +22,7 @@ class TouchBarArtworkViewController: NSViewController {
     }
     
     override func viewDidLoad() {
-        selectedPlayer.currentTrackWillChange
-            .signal()
+        selectedPlayer.objectWillChange
             .receive(on: DispatchQueue.main.cx)
             .invoke(TouchBarArtworkViewController.updateArtworkImage, weaklyOn: self)
             .store(in: &cancelBag)

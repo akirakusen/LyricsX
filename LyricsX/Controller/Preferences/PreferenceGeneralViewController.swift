@@ -31,6 +31,13 @@ class PreferenceGeneralViewController: NSViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        preferAuto.title = NSLocalizedString("Web / Auto", comment: "preferred player option")
+        preferAuto.toolTip = NSLocalizedString(
+            "Connects directly to YouTube Music in Chrome and automatically detects supported music apps.",
+            comment: "preferred player tooltip"
+        )
+        preferiTunes.title = NSLocalizedString("Apple Music", comment: "preferred player option")
         
         switch defaults[.preferredPlayerIndex] {
         case 0:

@@ -60,7 +60,11 @@ class KaraokeLyricsWindowController: NSWindowController {
                 .receive(on: DispatchQueue.lyricsDisplay.cx)
                 .invoke(KaraokeLyricsWindowController.handleLyricsDisplay, weaklyOn: self)
                 .store(in: &self.cancelBag)
-            defaults.publisher(for: [.preferBilingualLyrics, .desktopLyricsOneLineMode])
+            defaults.publisher(for: [
+                .preferBilingualLyrics,
+                .desktopLyricsOneLineMode,
+                .desktopLyricsVerticalMode,
+            ])
                 .prepend()
                 .invoke(KaraokeLyricsWindowController.handleLyricsDisplay, weaklyOn: self)
                 .store(in: &self.cancelBag)
@@ -134,13 +138,20 @@ class KaraokeLyricsWindowController: NSWindowController {
         var firstLine = lrc.content
         var secondLine: String
         var secondLineIsTranslation = false
-        if defaults[.desktopLyricsOneLineMode] {
+        let translation = lrc.attachments[.translation(languageCode: languageCode)]
+        let secondLineSource = LyricsSecondaryLinePolicy.source(
+            oneLineMode: defaults[.desktopLyricsOneLineMode],
+            isVertical: defaults[.desktopLyricsVerticalMode],
+            prefersTranslation: defaults[.preferBilingualLyrics],
+            hasTranslation: translation != nil
+        )
+        switch secondLineSource {
+        case .hidden:
             secondLine = ""
-        } else if defaults[.preferBilingualLyrics],
-            let translation = lrc.attachments[.translation(languageCode: languageCode)] {
-            secondLine = translation
+        case .translation:
+            secondLine = translation ?? ""
             secondLineIsTranslation = true
-        } else {
+        case .next:
             secondLine = next?.content ?? ""
         }
         
@@ -176,10 +187,10 @@ class KaraokeLyricsWindowController: NSWindowController {
             make.centerX.equalToSuperview().safeMultipliedBy(defaults[.desktopLyricsXPositionFactor] * 2).priority(.low)
             make.centerY.equalToSuperview().safeMultipliedBy(defaults[.desktopLyricsYPositionFactor] * 2).priority(.low)
             
-            make.leading.greaterThanOrEqualToSuperview().priority(.keepWindowSize)
-            make.trailing.lessThanOrEqualToSuperview().priority(.keepWindowSize)
-            make.top.greaterThanOrEqualToSuperview().priority(.keepWindowSize)
-            make.bottom.lessThanOrEqualToSuperview().priority(.keepWindowSize)
+            make.leading.greaterThanOrEqualToSuperview()
+            make.trailing.lessThanOrEqualToSuperview()
+            make.top.greaterThanOrEqualToSuperview()
+            make.bottom.lessThanOrEqualToSuperview()
         }
     }
     
