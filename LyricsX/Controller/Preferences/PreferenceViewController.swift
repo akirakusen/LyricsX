@@ -10,13 +10,18 @@
 import Cocoa
 
 class PreferenceViewController: NSTabViewController {
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        let symbols = ["gearshape", "textformat", "command", "line.3.horizontal.decrease.circle", "flask"]
+        for (item, symbol) in zip(tabViewItems, symbols) {
+            item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: item.label)
+        }
+    }
     
     override func viewWillAppear() {
-        #if IS_FOR_MAS
-            if defaults[.isInMASReview] != false {
-                removeTabViewItem(tabViewItems.last!)
-            }
-            checkForMASReview()
-        #endif
+        super.viewWillAppear()
+        view.window?.toolbarStyle = .preference
+        view.window?.titlebarAppearsTransparent = true
     }
 }

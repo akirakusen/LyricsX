@@ -19,10 +19,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         guard groupDefaults.bool(forKey: launchAndQuitWithPlayer) else {
             NSApplication.shared.terminate(nil)
-            abort() // fake invoking, just make compiler happy.
+            return
         }
         
         let index = groupDefaults.integer(forKey: preferredPlayerIndex)
+        guard playerBundleIdentifiers.indices.contains(index) else {
+            NSLog("LyricsXHelper stopped: preferred player index \(index) is unavailable.")
+            NSApplication.shared.terminate(nil)
+            return
+        }
         let ident = playerBundleIdentifiers[index]
         musicPlayers = ident.compactMap(SBApplication.init)
         
@@ -49,19 +54,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func launchMainAndQuit() -> Never {
+    func launchMainAndQuit() {
         var host = Bundle.main.bundleURL
         for _ in 0..<4 {
             host.deleteLastPathComponent()
         }
-        do {
-            try NSWorkspace.shared.launchApplication(at: host, configuration: [:])
-            NSLog("launch LyricsX succeed.")
-        } catch {
-            NSLog("launch LyricsX failed. reason: \(error)")
+        NSWorkspace.shared.openApplication(at: host, configuration: .init()) { _, error in
+            if let error {
+                NSLog("launch LyricsX failed. reason: \(error)")
+            } else {
+                NSLog("launch LyricsX succeeded.")
+            }
+            NSApp.terminate(nil)
         }
-        NSApp.terminate(nil)
-        abort() // fake invoking, just make compiler happy.
     }
 
 }
@@ -74,7 +79,7 @@ let playerBundleIdentifiers = [
     ["com.swinsian.Swinsian"],
 ]
 
-let groupDefaults = UserDefaults(suiteName: "3665V726AE.group.ddddxxx.LyricsX")!
+let groupDefaults = UserDefaults(suiteName: "QU3VK35N64.group.com.akirakusen.LyricsX")!
 
 // Preference
 let preferredPlayerIndex = "PreferredPlayerIndex"

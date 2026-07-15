@@ -13,8 +13,8 @@
 /* Class = "NSMenuItem"; title = "Traditional Chinese"; ObjectID = "6FU-j0-FTV"; */
 "6FU-j0-FTV.title" = "轉換為正體中文";
 
-/* Class = "NSTextFieldCell"; title = "Write lyrics to iTunes:"; ObjectID = "6We-TB-Wfc"; */
-"6We-TB-Wfc.title" = "將歌詞輸入 iTunes：";
+/* Class = "NSTextFieldCell"; title = "Write lyrics to Apple Music:"; ObjectID = "6We-TB-Wfc"; */
+"6We-TB-Wfc.title" = "將歌詞輸入 Apple Music：";
 
 /* Class = "NSButtonCell"; title = "Automatically"; ObjectID = "7Ax-7T-26K"; */
 "7Ax-7T-26K.title" = "自動導入";
@@ -22,8 +22,8 @@
 /* Class = "NSViewController"; title = "Display"; ObjectID = "8JF-Og-z6E"; */
 "8JF-Og-z6E.title" = "顯示";
 
-/* Class = "NSTextFieldCell"; title = "Write lyrics to iTunes:"; ObjectID = "8Sx-vb-5pB"; */
-"8Sx-vb-5pB.title" = "將歌詞輸入 iTunes：";
+/* Class = "NSTextFieldCell"; title = "Write lyrics to Apple Music:"; ObjectID = "8Sx-vb-5pB"; */
+"8Sx-vb-5pB.title" = "將歌詞輸入 Apple Music：";
 
 /* Class = "NSTextFieldCell"; title = "Font:"; ObjectID = "992-tg-edx"; */
 "992-tg-edx.title" = "字型：";

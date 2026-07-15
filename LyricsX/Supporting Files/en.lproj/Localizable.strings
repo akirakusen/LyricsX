@@ -15,3 +15,48 @@
 
 /* alert title */
 "Unable to enable Touch Bar lyrics." = "Unable to enable Touch Bar lyrics.";
+
+/* preferred player option */
+"Web / Auto" = "Web / Auto";
+
+/* preferred player tooltip */
+"Connects directly to YouTube Music in Chrome and automatically detects supported music apps." = "Connects directly to YouTube Music in Chrome and automatically detects supported music apps.";
+
+/* system Now Playing preference */
+"Legacy system Now Playing fallback" = "Legacy system Now Playing fallback";
+
+/* system Now Playing preference tooltip */
+"Uses the older macOS media-session bridge for players without direct integration." = "Uses the older macOS media-session bridge for players without direct integration.";
+
+/* menu item */
+"Set Up YouTube Music..." = "Set Up YouTube Music...";
+
+/* YouTube Music setup alert title */
+"Finish YouTube Music Setup" = "Finish YouTube Music Setup";
+
+/* YouTube Music setup instructions */
+"In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. If LyricsX was previously denied access, enable Google Chrome for LyricsX in System Settings > Privacy & Security > Automation. LyricsX only runs scripts in music.youtube.com tabs." = "In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. If LyricsX was previously denied access, enable Google Chrome for LyricsX in System Settings > Privacy & Security > Automation. LyricsX only runs scripts in music.youtube.com tabs.";
+
+/* YouTube Music automation alert title */
+"Allow Chrome Automation" = "Allow Chrome Automation";
+
+/* YouTube Music automation recovery instructions */
+"LyricsX cannot control Google Chrome because Automation access was denied. Open System Settings > Privacy & Security > Automation and enable Google Chrome for LyricsX. Then return to Chrome and keep JavaScript from Apple Events enabled." = "LyricsX cannot control Google Chrome because Automation access was denied. Open System Settings > Privacy & Security > Automation and enable Google Chrome for LyricsX. Then return to Chrome and keep JavaScript from Apple Events enabled.";
+
+/* YouTube Music Chrome alert title */
+"Enable YouTube Music Control" = "Enable YouTube Music Control";
+
+/* YouTube Music Chrome setup instructions */
+"In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. LyricsX only runs its integration script in music.youtube.com tabs." = "In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. LyricsX only runs its integration script in music.youtube.com tabs.";
+
+/* alert button */
+"Open Chrome" = "Open Chrome";
+
+/* alert button */
+"Open System Settings" = "Open System Settings";
+
+/* alert button */
+"Learn More" = "Learn More";
+
+/* alert button */
+"Later" = "Later";

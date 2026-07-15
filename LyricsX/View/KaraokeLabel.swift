@@ -17,14 +17,12 @@ class KaraokeLabel: NSTextField {
     @objc dynamic var isVertical = false {
         didSet {
             clearCache()
-            invalidateIntrinsicContentSize()
         }
     }
     
     @objc dynamic var drawFurigana = false {
         didSet {
             clearCache()
-            invalidateIntrinsicContentSize()
         }
     }
     
@@ -55,6 +53,8 @@ class KaraokeLabel: NSTextField {
     private func clearCache() {
         _attrString = nil
         _ctFrame = nil
+        _ctFrameSize = nil
+        invalidateIntrinsicContentSize()
         needsLayout = true
         needsDisplay = true
         removeProgressAnimation()
@@ -92,18 +92,24 @@ class KaraokeLabel: NSTextField {
     }
     
     private var _ctFrame: CTFrame?
+    private var _ctFrameSize: NSSize?
     private var ctFrame: CTFrame {
-        if let ctFrame = _ctFrame {
+        layoutSubtreeIfNeeded()
+        let frameSize = bounds.size
+        if let ctFrame = _ctFrame, _ctFrameSize == frameSize {
             return ctFrame
         }
-        layoutSubtreeIfNeeded()
         let progression: CTFrameProgression = isVertical ? .rightToLeft : .topToBottom
         let frameAttr: [CTFrame.AttributeKey: Any] = [.progression: progression.rawValue as NSNumber]
         let framesetter = CTFramesetter.create(attributedString: attrString)
-        let (suggestSize, fitRange) = framesetter.suggestFrameSize(constraints: bounds.size, frameAttributes: frameAttr)
+        let (suggestSize, fitRange) = framesetter.suggestFrameSize(
+            constraints: frameSize,
+            frameAttributes: frameAttr
+        )
         let path = CGPath(rect: CGRect(origin: .zero, size: suggestSize), transform: nil)
         let ctFrame = framesetter.frame(stringRange: fitRange, path: path, frameAttributes: frameAttr)
         _ctFrame = ctFrame
+        _ctFrameSize = frameSize
         return ctFrame
     }
     

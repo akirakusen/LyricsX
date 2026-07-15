@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scheme: LyricsX
+            configuration: Debug
+            derived_data: LyricsX-Debug
+          - scheme: LyricsX
+            configuration: Release
+            derived_data: LyricsX-Release
+          - scheme: LyricsX MAS
+            configuration: Release
+            derived_data: LyricsX-MAS-Release
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Run player support tests
+        if: matrix.scheme == 'LyricsX' && matrix.configuration == 'Debug'
+        run: swift test
+
+      - name: Build ${{ matrix.scheme }} (${{ matrix.configuration }}) without code signing
+        run: |
+          xcodebuild \
+            -project LyricsX.xcodeproj \
+            -scheme "${{ matrix.scheme }}" \
+            -configuration "${{ matrix.configuration }}" \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/${{ matrix.derived_data }}" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build

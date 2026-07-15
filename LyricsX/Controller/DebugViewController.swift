@@ -8,11 +8,10 @@
 //
 
 import Cocoa
-import AppCenterCrashes
 
 class DebugViewController: NSViewController {
     
     @IBAction func crashActioin(_ sender: Any) {
-        Crashes.generateTestCrash()
+        fatalError("Intentional crash from LyricsX debug tools")
     }
 }

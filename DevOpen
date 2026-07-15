@@ -1,5 +1,6 @@
 #!/bin/sh
 
-export CX_COMBINE_IMPLEMENTATION="CombineX"
-killall Xcode || true
-open $(dirname $0)/LyricsX.xcodeproj
+set -eu
+
+script_dir="$(CDPATH= cd "$(dirname "$0")" && pwd)"
+exec open "$script_dir/LyricsX.xcodeproj"

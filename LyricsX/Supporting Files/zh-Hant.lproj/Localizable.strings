@@ -15,3 +15,48 @@
 
 /* alert title */
 "Unable to enable Touch Bar lyrics." = "無法啟用 Touch Bar 歌詞";
+
+/* preferred player option */
+"Web / Auto" = "網頁 / 自動";
+
+/* preferred player tooltip */
+"Connects directly to YouTube Music in Chrome and automatically detects supported music apps." = "直接連接 Chrome 裡的 YouTube Music，並自動識別支援的音樂 App。";
+
+/* system Now Playing preference */
+"Legacy system Now Playing fallback" = "舊版系統播放狀態相容模式";
+
+/* system Now Playing preference tooltip */
+"Uses the older macOS media-session bridge for players without direct integration." = "為尚未直接支援的播放器使用舊版 macOS 媒體工作階段介面。";
+
+/* menu item */
+"Set Up YouTube Music..." = "設定 YouTube Music...";
+
+/* YouTube Music setup alert title */
+"Finish YouTube Music Setup" = "完成 YouTube Music 設定";
+
+/* YouTube Music setup instructions */
+"In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. If LyricsX was previously denied access, enable Google Chrome for LyricsX in System Settings > Privacy & Security > Automation. LyricsX only runs scripts in music.youtube.com tabs." = "在 Google Chrome 中選擇「顯示方式 > 開發人員 > 允許來自 Apple 事件的 JavaScript」。如果先前拒絕過 LyricsX，請在「系統設定 > 隱私權與安全性 > 自動化」中允許 LyricsX 控制 Google Chrome。LyricsX 只會在 music.youtube.com 分頁中執行腳本。";
+
+/* YouTube Music automation alert title */
+"Allow Chrome Automation" = "允許 Chrome 自動化控制";
+
+/* YouTube Music automation recovery instructions */
+"LyricsX cannot control Google Chrome because Automation access was denied. Open System Settings > Privacy & Security > Automation and enable Google Chrome for LyricsX. Then return to Chrome and keep JavaScript from Apple Events enabled." = "LyricsX 無法控制 Google Chrome，因為自動化權限已遭拒絕。請開啟「系統設定 > 隱私權與安全性 > 自動化」，允許 LyricsX 控制 Google Chrome，然後返回 Chrome 並保持「允許來自 Apple 事件的 JavaScript」開啟。";
+
+/* YouTube Music Chrome alert title */
+"Enable YouTube Music Control" = "啟用 YouTube Music 控制";
+
+/* YouTube Music Chrome setup instructions */
+"In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. LyricsX only runs its integration script in music.youtube.com tabs." = "在 Google Chrome 中選擇「顯示方式 > 開發人員 > 允許來自 Apple 事件的 JavaScript」。LyricsX 只會在 music.youtube.com 分頁中執行整合腳本。";
+
+/* alert button */
+"Open Chrome" = "開啟 Chrome";
+
+/* alert button */
+"Open System Settings" = "開啟系統設定";
+
+/* alert button */
+"Learn More" = "進一步瞭解";
+
+/* alert button */
+"Later" = "稍後";

@@ -11,13 +11,6 @@ import Cocoa
 import GenericID
 import MASShortcut
 import MusicPlayer
-import AppCenter
-import AppCenterAnalytics
-import AppCenterCrashes
-
-#if !IS_FOR_MAS
-import Sparkle
-#endif
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenuDelegate {
@@ -31,6 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
     @IBOutlet weak var statusBarMenu: NSMenu!
     
     var karaokeLyricsWC: KaraokeLyricsWindowController?
+    private var lastPresentedYouTubeMusicSetupIssue: YouTubeMusicSetupIssue?
     
     lazy var searchLyricsWC: NSWindowController = {
         // swiftlint:disable:next force_cast
@@ -42,13 +36,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         registerUserDefaults()
-        #if RELEASE
-        AppCenter.start(withAppSecret: "36777a05-06fd-422e-9375-a934b3c835a5", services:[
-            Analytics.self,
-            Crashes.self
-        ])
-        #endif
-        
+
+        defaultNC.addObserver(
+            self,
+            selector: #selector(handleYouTubeMusicSetupRequired(_:)),
+            name: .youTubeMusicSetupRequired,
+            object: nil
+        )
+        defaultNC.addObserver(
+            self,
+            selector: #selector(handleYouTubeMusicSetupResolved(_:)),
+            name: .youTubeMusicSetupResolved,
+            object: nil
+        )
+        let youtubeMusicItem = NSMenuItem(
+            title: NSLocalizedString("Set Up YouTube Music...", comment: "menu item"),
+            action: #selector(showYouTubeMusicSetupAction(_:)),
+            keyEquivalent: ""
+        )
+        youtubeMusicItem.target = self
+        if let preferencesIndex = statusBarMenu.items.firstIndex(where: { $0.tag == 300 }) {
+            statusBarMenu.insertItem(youtubeMusicItem, at: preferencesIndex)
+        }
+
         let controller = AppController.shared
         
         karaokeLyricsWC = KaraokeLyricsWindowController()
@@ -78,10 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
             groupDefaults.bind(NSBindingName($0.key), withDefaultName: $0)
         }
         
-        #if IS_FOR_MAS
-        checkForMASReview(force: true)
-        #else
-        SUUpdater.shared()?.checkForUpdatesInBackground()
+        #if !IS_FOR_MAS
         if #available(OSX 10.12.2, *) {
             observeDefaults(key: .touchBarLyricsEnabled, options: [.new, .initial]) { _, change in
                 if change.newValue, TouchBarLyricsController.shared == nil {
@@ -102,11 +109,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
             let url = Bundle.main.bundleURL
                 .appendingPathComponent("Contents/Library/LoginItems/LyricsXHelper.app")
             groupDefaults[.launchHelperTime] = Date()
-            do {
-                try NSWorkspace.shared.launchApplication(at: url, configuration: [:])
-                log("launch LyricsX Helper succeed.")
-            } catch {
-                log("launch LyricsX Helper failed. reason: \(error)")
+            NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, error in
+                if let error {
+                    log("launch LyricsX Helper failed. reason: \(error)")
+                } else {
+                    log("launch LyricsX Helper succeeded.")
+                }
             }
         }
     }
@@ -159,7 +167,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
             #else
                 let channel = "GitHub"
             #endif
-            let versionString = "\(channel) Version \(Bundle.main.semanticVersion!)"
+            let version = Bundle.main.object(
+                forInfoDictionaryKey: "CFBundleShortVersionString"
+            ) as? String ?? "Unknown"
+            let versionString = "\(channel) Version \(version)"
             NSApp.orderFrontStandardAboutPanel(options: [.applicationVersion: versionString])
         } else {
             NSApp.orderFrontStandardAboutPanel(sender)
@@ -167,12 +178,116 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
         NSApp.activate(ignoringOtherApps: true)
     }
     
-    @IBAction func checkUpdateAction(_ sender: Any) {
+    @IBAction func openReleasesAction(_ sender: Any) {
         #if IS_FOR_MAS
-        assert(false, "should not be there")
+        return
         #else
-        SUUpdater.shared()?.checkForUpdates(sender)
+        NSWorkspace.shared.open(lyricsXReleasesURL)
         #endif
+    }
+
+    @objc private func handleYouTubeMusicSetupRequired(_ notification: Notification) {
+        guard let issue = notification.object as? YouTubeMusicSetupIssue,
+              issue != lastPresentedYouTubeMusicSetupIssue else { return }
+        lastPresentedYouTubeMusicSetupIssue = issue
+        presentYouTubeMusicSetup(issue: issue)
+    }
+
+    @objc private func handleYouTubeMusicSetupResolved(_ notification: Notification) {
+        lastPresentedYouTubeMusicSetupIssue = nil
+    }
+
+    @objc private func showYouTubeMusicSetupAction(_ sender: Any?) {
+        presentYouTubeMusicSetup(issue: nil)
+    }
+
+    private func presentYouTubeMusicSetup(issue: YouTubeMusicSetupIssue?) {
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        let firstAction: () -> Void
+        let secondAction: () -> Void
+        switch issue {
+        case .automationDenied:
+            alert.messageText = NSLocalizedString(
+                "Allow Chrome Automation",
+                comment: "YouTube Music automation alert title"
+            )
+            alert.informativeText = NSLocalizedString(
+                "LyricsX cannot control Google Chrome because Automation access was denied. Open System Settings > Privacy & Security > Automation and enable Google Chrome for LyricsX. Then return to Chrome and keep JavaScript from Apple Events enabled.",
+                comment: "YouTube Music automation recovery instructions"
+            )
+            alert.addButton(withTitle: NSLocalizedString("Open System Settings", comment: "alert button"))
+            alert.addButton(withTitle: NSLocalizedString("Open Chrome", comment: "alert button"))
+            firstAction = openAutomationSettings
+            secondAction = openChrome
+        case .chromeJavaScriptDisabled:
+            alert.messageText = NSLocalizedString(
+                "Enable YouTube Music Control",
+                comment: "YouTube Music Chrome alert title"
+            )
+            alert.informativeText = NSLocalizedString(
+                "In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. LyricsX only runs its integration script in music.youtube.com tabs.",
+                comment: "YouTube Music Chrome setup instructions"
+            )
+            alert.addButton(withTitle: NSLocalizedString("Open Chrome", comment: "alert button"))
+            alert.addButton(withTitle: NSLocalizedString("Learn More", comment: "alert button"))
+            firstAction = openChrome
+            secondAction = openYouTubeMusicSetupHelp
+        case nil:
+            alert.messageText = NSLocalizedString(
+                "Finish YouTube Music Setup",
+                comment: "YouTube Music setup alert title"
+            )
+            alert.informativeText = NSLocalizedString(
+                "In Google Chrome, choose View > Developer > Allow JavaScript from Apple Events. If LyricsX was previously denied access, enable Google Chrome for LyricsX in System Settings > Privacy & Security > Automation. LyricsX only runs scripts in music.youtube.com tabs.",
+                comment: "YouTube Music setup instructions"
+            )
+            alert.addButton(withTitle: NSLocalizedString("Open Chrome", comment: "alert button"))
+            alert.addButton(withTitle: NSLocalizedString("Open System Settings", comment: "alert button"))
+            firstAction = openChrome
+            secondAction = openAutomationSettings
+        }
+        alert.addButton(withTitle: NSLocalizedString("Later", comment: "alert button"))
+        NSApp.activate(ignoringOtherApps: true)
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            firstAction()
+        case .alertSecondButtonReturn:
+            secondAction()
+        default:
+            break
+        }
+    }
+
+    private func openAutomationSettings() {
+        let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
+        )!
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openYouTubeMusicSetupHelp() {
+        NSWorkspace.shared.open(URL(string: "https://support.google.com/chrome/?p=applescript")!)
+    }
+
+    private func openChrome() {
+        guard let chromeURL = NSWorkspace.shared.urlForApplication(
+            withBundleIdentifier: "com.google.Chrome"
+        ) else {
+            log("Google Chrome is not installed.")
+            return
+        }
+
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.openApplication(
+            at: chromeURL,
+            configuration: configuration
+        ) { _, error in
+            if let error {
+                log("Failed to open Google Chrome: \(error)")
+            }
+        }
     }
     
     @IBAction func increaseOffset(_ sender: Any?) {

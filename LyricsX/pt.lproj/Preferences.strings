@@ -16,8 +16,8 @@
 /* Class = "NSMenuItem"; title = "Traditional Chinese"; ObjectID = "6FU-j0-FTV"; */
 "6FU-j0-FTV.title" = "Chinês Tradicional";
 
-/* Class = "NSTextFieldCell"; title = "Write lyrics to iTunes:"; ObjectID = "6We-TB-Wfc"; */
-"6We-TB-Wfc.title" = "Escrever letras no iTunes:";
+/* Class = "NSTextFieldCell"; title = "Write lyrics to Apple Music:"; ObjectID = "6We-TB-Wfc"; */
+"6We-TB-Wfc.title" = "Escrever letras no Apple Music:";
 
 /* Class = "NSButtonCell"; title = "Automatically"; ObjectID = "7Ax-7T-26K"; */
 "7Ax-7T-26K.title" = "Automaticamente";
@@ -25,8 +25,8 @@
 /* Class = "NSViewController"; title = "Display"; ObjectID = "8JF-Og-z6E"; */
 "8JF-Og-z6E.title" = "Mostrar";
 
-/* Class = "NSTextFieldCell"; title = "Write lyrics to iTunes:"; ObjectID = "8Sx-vb-5pB"; */
-"8Sx-vb-5pB.title" = "Escrever letras no iTunes:";
+/* Class = "NSTextFieldCell"; title = "Write lyrics to Apple Music:"; ObjectID = "8Sx-vb-5pB"; */
+"8Sx-vb-5pB.title" = "Escrever letras no Apple Music:";
 
 /* Class = "NSTextFieldCell"; title = "Font:"; ObjectID = "992-tg-edx"; */
 "992-tg-edx.title" = "Font:";

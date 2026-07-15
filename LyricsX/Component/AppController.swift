@@ -189,13 +189,6 @@ class AppController: NSObject {
             }
         }
         
-        #if IS_FOR_MAS
-            guard defaults[.isInMASReview] == false else {
-                return
-            }
-            checkForMASReview()
-        #endif
-        
         if let album = track.album, defaults[.noSearchingAlbumNames].contains(album) {
             return
         }

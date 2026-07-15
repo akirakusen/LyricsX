@@ -8,6 +8,7 @@
 //
 
 import Cocoa
+import MusicPlayer
 
 class PreferenceLabViewController: NSViewController {
     
@@ -15,6 +16,23 @@ class PreferenceLabViewController: NSViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        if let systemMediaButton = view.viewWithTag(6005) as? NSButton {
+            systemMediaButton.title = NSLocalizedString(
+                "Legacy system Now Playing fallback",
+                comment: "system Now Playing preference"
+            )
+            systemMediaButton.toolTip = NSLocalizedString(
+                "Uses the older macOS media-session bridge for players without direct integration.",
+                comment: "system Now Playing preference tooltip"
+            )
+            if #available(macOS 15.4, *) {
+                defaults[.useSystemWideNowPlaying] = false
+                systemMediaButton.state = .off
+                systemMediaButton.isEnabled = false
+            } else {
+                systemMediaButton.isEnabled = MusicPlayers.SystemMedia.available
+            }
+        }
         #if IS_FOR_MAS
             enableTouchBarLyricsButton.state = .off
             enableTouchBarLyricsButton.target = self
@@ -33,8 +51,7 @@ class PreferenceLabViewController: NSViewController {
         alert.addButton(withTitle: NSLocalizedString("Download", comment: ""))
         let handler = { (response: NSApplication.ModalResponse) in
             if response == .alertSecondButtonReturn {
-                let url = URL(string: "https://github.com/XQS6LB3A/LyricsX/releases")!
-                NSWorkspace.shared.open(url)
+                NSWorkspace.shared.open(lyricsXReleasesURL)
             }
         }
         if let window = view.window {

@@ -12,27 +12,18 @@ Ultimate lyrics app for macOS.
 
 ## Installation
 
-### Homebrew
+Download from [releases](https://github.com/akirakusen/LyricsX/releases).
 
-```
-$ brew install --cask lyricsx
-```
-
-### Mac App Store
-
-[![download on the Mac App Store](docs/img/MAS_badge.svg)](https://itunes.apple.com/us/app/lyricsx/id1254743014?mt=12)
-
-### Manual
-
-Download from [releases](https://github.com/ddddxxx/LyricsX/releases).
+To build locally, open `LyricsX.xcodeproj` in Xcode. Dependencies are resolved with Swift Package Manager.
 
 ### Requirements
 
-- macOS 10.11+
+- macOS 12+
 
 ## Features
 
 - Work perfectly with your favorite music players. [List of supported players](https://github.com/ddddxxx/MusicPlayer#supported-players)
+- Support YouTube Music in a Chrome tab or installed Chrome app, including live metadata, playback position, seeking, and playback controls.
 - Automatically search & download live lyrics from various lyrics sources. [List of supported sources](https://github.com/ddddxxx/LyricsKit#supported-sources)
 - Display lyrics on desktop and menubar. you can customize font, color and position.
 - Adjust lyrics offset on status menu.
@@ -40,6 +31,14 @@ Download from [releases](https://github.com/ddddxxx/LyricsX/releases).
 - Drag & Drop to import/export lyrics file.
 - Auto launch & quit with music player.
 - Automatic conversion between Traditional Chinese and Simplified Chinese.
+
+### YouTube Music Setup
+
+1. In LyricsX, choose **Set Up YouTube Music...** from the menu bar item.
+2. In Google Chrome, choose **View > Developer > Allow JavaScript from Apple Events**.
+3. Approve the macOS Automation prompt for LyricsX, then leave **Web / Auto** selected in Preferences.
+
+LyricsX uses Chrome's documented AppleScript interface and only executes its integration script in `music.youtube.com` tabs. The same integration works with the installable YouTube Music Chrome app.
 
 ### Lyrics Editor
 
@@ -59,7 +58,7 @@ LyricsX use custom lyrics file format "LRCX" which support word time tag, multi-
 
 #### Components
 
-- [LyricsKit](https://github.com/ddddxxx/LyricsKit)
+- [LyricsKit](https://github.com/akirakusen/LyricsKit)
 - [MusicPlayer](https://github.com/ddddxxx/MusicPlayer)
 
 #### Open Source Libraries
@@ -68,12 +67,10 @@ LyricsX use custom lyrics file format "LRCX" which support word time tag, multi-
 - [GenericID](https://github.com/ddddxxx/GenericID)
 - [SwiftCF](https://github.com/ddddxxx/SwiftCF)
 - [Regex](https://github.com/ddddxxx/Regex)
-- [Semver](https://github.com/ddddxxx/Semver)
 - [TouchBarHelper](https://github.com/ddddxxx/TouchBarHelper)
 - [CombineX](https://github.com/cx-org/CombineX)
 - [SnapKit](https://github.com/SnapKit/SnapKit)
 - [MASShortcut](https://github.com/shpakovski/MASShortcut)
-- [Sparkle](https://github.com/sparkle-project/Sparkle)
 - [Then](https://github.com/devxoul/Then)
 
 #### Special Thanks
