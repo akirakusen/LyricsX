@@ -70,9 +70,6 @@
 /* Class = "NSTextFieldCell"; title = "Here are some experimental features that may not be stable enough, and may be removed in the future."; ObjectID = "g2u-8D-dln"; */
 "g2u-8D-dln.title" = "Hier zijn enkele experimentele functies die mogelijk niet stabiel genoeg zijn en in de toekomst verwijderd zouden kunnen worden.";
 
-/* Class = "NSButtonCell"; title = "Enable Touch Bar lyrics"; ObjectID = "gGL-LB-TXI"; */
-"gGL-LB-TXI.title" = "Schakel Touch Bar songteksten in";
-
 /* Class = "NSButtonCell"; title = "Use system wide now playing application"; ObjectID = "gin-P2-gb5"; */
 "gin-P2-gb5.title" = "Gebruik de systeem-brede nu afgespeelde applicatie";
 
@@ -177,6 +174,3 @@
 
 /* Class = "NSMenuItem"; title = "No Conversion"; ObjectID = "zhB-kd-WWG"; */
 "zhB-kd-WWG.title" = "Geen conversie";
-
-/* Class = "NSButtonCell"; title = "Customize TouchBar"; ObjectID = "zQK-i2-2Nc"; */
-"zQK-i2-2Nc.title" = "TouchBar aanpassen";

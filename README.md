@@ -69,7 +69,6 @@ LyricsX use custom lyrics file format "LRCX" which support word time tag, multi-
 - [GenericID](https://github.com/ddddxxx/GenericID)
 - [SwiftCF](https://github.com/ddddxxx/SwiftCF)
 - [Regex](https://github.com/ddddxxx/Regex)
-- [TouchBarHelper](https://github.com/ddddxxx/TouchBarHelper)
 - [CombineX](https://github.com/cx-org/CombineX)
 - [SnapKit](https://github.com/SnapKit/SnapKit)
 - [MASShortcut](https://github.com/shpakovski/MASShortcut)

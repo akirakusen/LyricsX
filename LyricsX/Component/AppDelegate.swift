@@ -88,17 +88,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
             groupDefaults.bind(NSBindingName($0.key), withDefaultName: $0)
         }
         
-        #if !IS_FOR_MAS
-        if #available(OSX 10.12.2, *) {
-            observeDefaults(key: .touchBarLyricsEnabled, options: [.new, .initial]) { _, change in
-                if change.newValue, TouchBarLyricsController.shared == nil {
-                    TouchBarLyricsController.shared = TouchBarLyricsController()
-                } else if !change.newValue, TouchBarLyricsController.shared != nil {
-                    TouchBarLyricsController.shared = nil
-                }
-            }
-        }
-        #endif
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {

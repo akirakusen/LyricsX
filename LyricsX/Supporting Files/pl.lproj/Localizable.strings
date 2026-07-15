@@ -9,9 +9,3 @@
 
 /* window title */
 "Search Lyrics" = "Szukaj tekstu";
-
-/* No comment provided by engineer. */
-"Touch Bar lyrics is not supported in Mac App Store Version. Please download on GitHub." = "Tekst na Touch Bar nie jest dostępny w Wersji z App Store. Aby pobrać, wejdź na GitHub.";
-
-/* alert title */
-"Unable to enable Touch Bar lyrics." = "Nie można włączyć tekstu na Touch Bar.";

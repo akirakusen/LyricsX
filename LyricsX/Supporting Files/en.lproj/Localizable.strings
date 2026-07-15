@@ -10,12 +10,6 @@
 /* window title */
 "Search Lyrics" = "Search Lyrics";
 
-/* No comment provided by engineer. */
-"Touch Bar lyrics is not supported in Mac App Store Version. Please download on GitHub." = "Touch Bar lyrics is not supported in Mac App Store Version. Please download on GitHub.";
-
-/* alert title */
-"Unable to enable Touch Bar lyrics." = "Unable to enable Touch Bar lyrics.";
-
 /* preferred player option */
 "Web / Auto" = "Web / Auto";
 

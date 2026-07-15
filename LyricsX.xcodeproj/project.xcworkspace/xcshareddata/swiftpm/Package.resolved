@@ -124,15 +124,6 @@
         "branch" : "v2.0.0-beta",
         "revision" : "1d8105a0f7199c90af722bff62728050c858e777"
       }
-    },
-    {
-      "identity" : "touchbarhelper",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ddddxxx/TouchBarHelper",
-      "state" : {
-        "revision" : "003d41193ac1c6ab9cc570a1923587298014bf1d",
-        "version" : "0.1.0"
-      }
     }
   ],
   "version" : 3

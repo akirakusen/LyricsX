@@ -10,12 +10,6 @@
 /* window title */
 "Search Lyrics" = "搜索歌词";
 
-/* No comment provided by engineer. */
-"Touch Bar lyrics is not supported in Mac App Store Version. Please download on GitHub." = "Mac App Store 版不支持触控栏歌词。请从 GitHub 下载最新版本。";
-
-/* alert title */
-"Unable to enable Touch Bar lyrics." = "无法启用触控栏歌词。";
-
 /* preferred player option */
 "Web / Auto" = "网页 / 自动";
 

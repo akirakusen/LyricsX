@@ -1,0 +1,21 @@
+Corresponding Source Code
+=========================
+
+The following source revisions correspond to the MPL-2.0 software distributed
+in LyricsX 1.7.0 (build 2347):
+
+LyricsX v1.7.0
+https://github.com/akirakusen/LyricsX/tree/v1.7.0
+https://github.com/akirakusen/LyricsX/archive/refs/tags/v1.7.0.zip
+
+LyricsKit revision 265c70ba189391c4d7d6aa3176a8dad6f684c497
+https://github.com/akirakusen/LyricsKit/tree/265c70ba189391c4d7d6aa3176a8dad6f684c497
+https://github.com/akirakusen/LyricsKit/archive/265c70ba189391c4d7d6aa3176a8dad6f684c497.zip
+
+MusicPlayer revision 6eee88b4800bba1cc03b2a233fe858ccca7c9862
+https://github.com/ddddxxx/MusicPlayer/tree/6eee88b4800bba1cc03b2a233fe858ccca7c9862
+https://github.com/ddddxxx/MusicPlayer/archive/6eee88b4800bba1cc03b2a233fe858ccca7c9862.zip
+
+These URLs provide the source in the preferred form for modification, at no
+charge. If a URL becomes unavailable, contact the distributor through the
+LyricsX repository above while this version is being distributed.
