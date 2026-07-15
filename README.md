@@ -12,7 +12,9 @@ Ultimate lyrics app for macOS.
 
 ## Installation
 
-Download from [releases](https://github.com/akirakusen/LyricsX/releases).
+Download the [LyricsX 1.7.0 universal DMG](https://github.com/akirakusen/LyricsX/releases/download/v1.7.0/LyricsX-1.7.0-universal.dmg).
+
+This community preview is not notarized. After copying LyricsX to Applications, Control-click it and choose **Open** the first time.
 
 To build locally, open `LyricsX.xcodeproj` in Xcode. Dependencies are resolved with Swift Package Manager.
 
