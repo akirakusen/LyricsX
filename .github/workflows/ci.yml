@@ -2,10 +2,16 @@ name: CI
 
 on:
   push:
+    branches:
+      - master
   pull_request:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-and-build:
@@ -28,7 +34,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run player support tests
         if: matrix.scheme == 'LyricsX' && matrix.configuration == 'Debug'
