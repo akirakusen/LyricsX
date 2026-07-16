@@ -2,11 +2,11 @@ Corresponding Source Code
 =========================
 
 The following source revisions correspond to the MPL-2.0 software distributed
-in LyricsX 1.7.1 (build 2348):
+in LyricsX 1.7.2 (build 2349):
 
-LyricsX v1.7.1
-https://github.com/akirakusen/LyricsX/tree/v1.7.1
-https://github.com/akirakusen/LyricsX/archive/refs/tags/v1.7.1.zip
+LyricsX v1.7.2
+https://github.com/akirakusen/LyricsX/tree/v1.7.2
+https://github.com/akirakusen/LyricsX/archive/refs/tags/v1.7.2.zip
 
 LyricsKit revision fc169614ecd38a5c2fe03efd41105322e0266149
 https://github.com/akirakusen/LyricsKit/tree/fc169614ecd38a5c2fe03efd41105322e0266149

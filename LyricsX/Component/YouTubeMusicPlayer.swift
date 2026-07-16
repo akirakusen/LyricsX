@@ -278,7 +278,7 @@ extension MusicPlayers {
             artworkRequestKey = requestKey
 
             var request = URLRequest(url: url, timeoutInterval: 5)
-            request.setValue("LyricsX/1.7.1", forHTTPHeaderField: "User-Agent")
+            request.setValue("LyricsX/1.7.2", forHTTPHeaderField: "User-Agent")
             let task = artworkSession.dataTask(with: request) { [weak self] data, response, error in
                 let statusCode = (response as? HTTPURLResponse)?.statusCode
                 let image = error == nil && statusCode.map({ 200 ..< 300 ~= $0 }) == true
