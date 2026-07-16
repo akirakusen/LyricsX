@@ -24,12 +24,15 @@ class LyricsHUDViewController: NSViewController, NSWindowDelegate, ScrollLyricsV
     @objc dynamic var isTracking = true {
         didSet {
             if !oldValue, isTracking {
-                displayLyrics()
+                displayLyrics(animation: trackingResumeAnimation)
             }
         }
     }
     
     private var cancelBag = Set<AnyCancellable>()
+    private var trackingResumeWorkItem: DispatchWorkItem?
+    private var trackingResumeAnimation = true
+    private let trackingResumeDelay: TimeInterval = 4
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -74,12 +77,15 @@ class LyricsHUDViewController: NSViewController, NSWindowDelegate, ScrollLyricsV
         
         observeNotification(name: NSScrollView.willStartLiveScrollNotification,
                             object: lyricsScrollView,
-                            queue: .main) { [unowned self] _ in self.isTracking = false }
+                            queue: .main) { [weak self] _ in self?.pauseTracking() }
+        observeNotification(name: NSScrollView.didEndLiveScrollNotification,
+                            object: lyricsScrollView,
+                            queue: .main) { [weak self] _ in self?.scheduleTrackingResume() }
     }
     
     override func viewWillAppear() {
+        resumeTracking(animation: false)
         noLyricsLabel.isHidden = AppController.shared.currentLyrics != nil
-        displayLyrics(animation: false)
     }
     
     // MARK: - Handler
@@ -89,8 +95,36 @@ class LyricsHUDViewController: NSViewController, NSWindowDelegate, ScrollLyricsV
             let newLyrics = AppController.shared.currentLyrics
             self.lyricsScrollView.setupTextContents(lyrics: newLyrics)
             self.noLyricsLabel.isHidden = newLyrics != nil
-            self.displayLyrics(animation: false)
+            self.resumeTracking(animation: false)
         }
+    }
+
+    private func pauseTracking() {
+        trackingResumeWorkItem?.cancel()
+        trackingResumeWorkItem = nil
+        isTracking = false
+    }
+
+    private func scheduleTrackingResume() {
+        trackingResumeWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.resumeTracking()
+        }
+        trackingResumeWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + trackingResumeDelay, execute: workItem)
+    }
+
+    private func resumeTracking(animation: Bool = true) {
+        trackingResumeWorkItem?.cancel()
+        trackingResumeWorkItem = nil
+
+        guard !isTracking else {
+            displayLyrics(animation: animation)
+            return
+        }
+        trackingResumeAnimation = animation
+        isTracking = true
+        trackingResumeAnimation = true
     }
     
     private func displayLyrics(animation: Bool = true) {
@@ -117,14 +151,16 @@ class LyricsHUDViewController: NSViewController, NSWindowDelegate, ScrollLyricsV
     func doubleClickLyricsLine(at position: TimeInterval) {
         let pos = position - (AppController.shared.currentLyrics?.adjustedTimeDelay ?? 0)
         selectedPlayer.playbackTime = pos
-        isTracking = true
+        resumeTracking(animation: false)
     }
     
     func scrollWheelDidStartScroll() {
-        isTracking = false
+        pauseTracking()
     }
     
-    func scrollWheelDidEndScroll() {}
+    func scrollWheelDidEndScroll() {
+        scheduleTrackingResume()
+    }
     
     // MARK: NSWindowDelegate
     

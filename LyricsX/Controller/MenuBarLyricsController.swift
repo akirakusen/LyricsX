@@ -22,15 +22,13 @@ class MenuBarLyricsController {
     static let shared = MenuBarLyricsController()
     
     let statusItem: NSStatusItem
-    var lyricsItem: NSStatusItem?
+    let lyricsItem: NSStatusItem
     var buttonImage = #imageLiteral(resourceName: "status_bar_icon")
     var buttonlength: CGFloat = 30
     
     private var screenLyrics = "" {
         didSet {
-            DispatchQueue.main.async {
-                self.updateStatusItem()
-            }
+            updateStatusItem()
         }
     }
     
@@ -38,10 +36,18 @@ class MenuBarLyricsController {
     
     private init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        lyricsItem = NSStatusBar.system.statusItem(withLength: 0)
+        (lyricsItem.button?.cell as? NSButtonCell)?.highlightsBy = []
+        lyricsItem.button?.title = ""
         AppController.shared.$currentLyrics
             .combineLatest(AppController.shared.$currentLineIndex)
             .receive(on: DispatchQueue.lyricsDisplay.cx)
-            .invoke(MenuBarLyricsController.handleLyricsDisplay, weaklyOn: self)
+            .map { Self.lyricsText(event: $0) }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main.cx)
+            .sink { [weak self] lyrics in
+                self?.screenLyrics = lyrics
+            }
             .store(in: &cancelBag)
         workspaceNC.cx
             .publisher(for: NSWorkspace.didActivateApplicationNotification)
@@ -54,27 +60,33 @@ class MenuBarLyricsController {
             .store(in: &cancelBag)
     }
     
-    private func handleLyricsDisplay(event: (lyrics: Lyrics?, index: Int?)) {
+    private static func lyricsText(event: (lyrics: Lyrics?, index: Int?)) -> String {
         guard !defaults[.disableLyricsWhenPaused] || selectedPlayer.playbackState.isPlaying,
             let lyrics = event.lyrics,
             let index = event.index else {
-            screenLyrics = ""
-            return
+            return ""
+        }
+        guard lyrics.lines.indices.contains(index) else {
+            return ""
         }
         var newScreenLyrics = lyrics.lines[index].content
         if let converter = ChineseConverter.shared, lyrics.metadata.language?.hasPrefix("zh") == true {
             newScreenLyrics = converter.convert(newScreenLyrics)
         }
-        if newScreenLyrics == screenLyrics {
-            return
-        }
-        screenLyrics = newScreenLyrics
+        return newScreenLyrics
     }
     
     @objc private func updateStatusItem() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.updateStatusItem()
+            }
+            return
+        }
+
         guard defaults[.menuBarLyricsEnabled], !screenLyrics.isEmpty else {
             setImageStatusItem()
-            lyricsItem = nil
+            hideLyricsItem()
             return
         }
         
@@ -88,15 +100,12 @@ class MenuBarLyricsController {
     private func updateSeparateStatusLyrics() {
         setImageStatusItem()
         
-        if lyricsItem == nil {
-            lyricsItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-            (lyricsItem?.button?.cell as? NSButtonCell)?.highlightsBy = []
-        }
-        lyricsItem?.button?.title = screenLyrics
+        lyricsItem.button?.title = screenLyrics
+        lyricsItem.length = NSStatusItem.variableLength
     }
     
     private func updateCombinedStatusLyrics() {
-        lyricsItem = nil
+        hideLyricsItem()
         
         setTextStatusItem(string: screenLyrics)
         if statusItem.isVisibe {
@@ -122,6 +131,11 @@ class MenuBarLyricsController {
         statusItem.button?.title = ""
         statusItem.button?.image = buttonImage
         statusItem.length = buttonlength
+    }
+
+    private func hideLyricsItem() {
+        lyricsItem.button?.title = ""
+        lyricsItem.length = 0
     }
 }
 

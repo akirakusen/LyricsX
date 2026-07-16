@@ -91,9 +91,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
-        if AppController.shared.currentLyrics?.metadata.needsPersist == true {
-            AppController.shared.currentLyrics?.persist()
-        }
+        AppController.shared.persistCurrentLyricsBeforeTermination()
         if defaults[.launchAndQuitWithPlayer] {
             let url = Bundle.main.bundleURL
                 .appendingPathComponent("Contents/Library/LoginItems/LyricsXHelper.app")
@@ -288,13 +286,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
     }
     
     @IBAction func showCurrentLyricsInFinder(_ sender: Any?) {
-        guard let lyrics = AppController.shared.currentLyrics else {
-            return
-        }
-        if lyrics.metadata.needsPersist {
-            lyrics.persist()
-        }
-        if let url = lyrics.metadata.localURL {
+        if let url = AppController.shared.persistedCurrentLyricsURL() {
             NSWorkspace.shared.activateFileViewerSelecting([url])
         }
     }
@@ -310,33 +302,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSMenu
     }
     
     @IBAction func wrongLyrics(_ sender: Any?) {
-        guard let track = selectedPlayer.currentTrack else {
-            return
-        }
-        defaults[.noSearchingTrackIds].append(track.id)
-        if defaults[.writeToiTunesAutomatically] {
-            track.setLyrics("")
-        }
-        if let url = AppController.shared.currentLyrics?.metadata.localURL {
-            try? FileManager.default.removeItem(at: url)
-        }
-        AppController.shared.currentLyrics = nil
-        AppController.shared.searchCanceller?.cancel()
+        AppController.shared.markCurrentLyricsWrong()
     }
     
     @IBAction func doNotSearchLyricsForThisAlbum(_ sender: Any?) {
-        guard let track = selectedPlayer.currentTrack,
-            let album = track.album else {
-            return
-        }
-        defaults[.noSearchingAlbumNames].append(album)
-        if defaults[.writeToiTunesAutomatically] {
-            track.setLyrics("")
-        }
-        if let url = AppController.shared.currentLyrics?.metadata.localURL {
-            try? FileManager.default.removeItem(at: url)
-        }
-        AppController.shared.currentLyrics = nil
+        AppController.shared.disableSearchForCurrentAlbum()
     }
     
     func registerUserDefaults() {

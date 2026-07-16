@@ -203,6 +203,12 @@ private extension NSPredicate {
 extension Lyrics {
     
     func filtrate() {
+        for index in lines.indices {
+            lines[index].enabled = true
+        }
+        guard defaults[.lyricsFilterEnabled] else {
+            return
+        }
         filtrate(isIncluded: NSPredicate.lyricsPredicate)
     }
 }

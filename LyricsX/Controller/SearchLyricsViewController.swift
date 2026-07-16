@@ -29,6 +29,8 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     var searchCanceller: Cancellable?
     var searchResult: [Lyrics] = []
     var progressObservation: NSKeyValueObservation?
+    private var searchGeneration: UInt = 0
+    private var searchResultKeys = Set<String>()
     
     @IBOutlet weak var artworkView: NSImageView!
     @IBOutlet weak var tableView: NSTableView!
@@ -66,30 +68,58 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     }
     
     @IBAction func searchAction(_ sender: Any?) {
+        searchGeneration &+= 1
+        let generation = searchGeneration
         searchCanceller?.cancel()
+        searchCanceller = nil
         progressObservation?.invalidate()
+        progressObservation = nil
         searchResult = []
+        searchResultKeys.removeAll(keepingCapacity: true)
         artworkView.image = #imageLiteral(resourceName: "missing_artwork")
         lyricsPreviewTextView.string = " "
         
         let track = selectedPlayer.currentTrack
-        let duration = track?.duration ?? 0
-        let req = LyricsSearchRequest(searchTerm: .info(title: searchTitle, artist: searchArtist), duration: duration, limit: 8)
+        let duration = track?.duration.flatMap {
+            $0.isFinite && $0 > 0 ? $0 : nil
+        } ?? 0
+        let normalizedTitle = searchTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedTitle.isEmpty else {
+            searchRequest = nil
+            progressIndicator.stopAnimation(nil)
+            tableView.reloadData()
+            return
+        }
+        let normalizedArtist = searchArtist.trimmingCharacters(in: .whitespacesAndNewlines)
+        let searchTerm: LyricsSearchRequest.SearchTerm = normalizedArtist.isEmpty
+            ? .keyword(normalizedTitle)
+            : .info(title: normalizedTitle, artist: normalizedArtist)
+        let req = LyricsSearchRequest(
+            searchTerm: searchTerm,
+            duration: duration,
+            limit: 8
+        )
         searchRequest = req
         searchCanceller = lyricsManager.lyricsPublisher(request: req)
-            .sink(receiveCompletion: { [unowned self] _ in
-                DispatchQueue.main.async {
-                    self.progressIndicator.stopAnimation(nil)
+            .timeout(.seconds(10), scheduler: DispatchQueue.lyricsDisplay.cx)
+            .receive(on: DispatchQueue.main.cx)
+            .sink(receiveCompletion: { [weak self] _ in
+                guard let self = self,
+                    self.searchGeneration == generation,
+                    self.searchRequest == req else {
+                    return
                 }
-            }, receiveValue: { [unowned self] lyrics in
-                self.lyricsReceived(lyrics: lyrics)
-            }).cancel(after: .seconds(10), scheduler: DispatchQueue.lyricsDisplay.cx)
+                self.progressIndicator.stopAnimation(nil)
+            }, receiveValue: { [weak self] lyrics in
+                self?.lyricsReceived(lyrics: lyrics, request: req, generation: generation)
+            })
         progressIndicator.startAnimation(nil)
         tableView.reloadData()
     }
     
     @IBAction func useLyricsAction(_ sender: Any) {
-        guard let index = tableView.selectedRowIndexes.first else {
+        guard let index = tableView.selectedRowIndexes.first,
+            searchResult.indices.contains(index) else {
             return
         }
         
@@ -104,29 +134,36 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
         }
         
         let lrc = searchResult[index]
-        lrc.associateWithTrack(track)
-        AppController.shared.currentLyrics = lrc
-        if defaults[.writeToiTunesAutomatically] {
-            AppController.shared.writeToiTunes(overwrite: true)
-        }
+        AppController.shared.useLyrics(lrc, for: track, writeToPlayer: true)
     }
     
     // MARK: - LyricsSourceDelegate
     
-    func lyricsReceived(lyrics: Lyrics) {
-        guard lyrics.metadata.request == searchRequest else {
+    private func lyricsReceived(lyrics: Lyrics, request: LyricsSearchRequest, generation: UInt) {
+        guard searchGeneration == generation,
+            searchRequest == request,
+            lyrics.metadata.request == request else {
             return
         }
         lyrics.filtrate()
         lyrics.recognizeLanguage()
         lyrics.metadata.needsPersist = true
+        guard searchResultKeys.insert(searchResultKey(for: lyrics)).inserted else {
+            return
+        }
+        let selectedRow = tableView.selectedRow
+        let selectedLyrics = searchResult.indices.contains(selectedRow)
+            ? searchResult[selectedRow]
+            : nil
         if let idx = searchResult.firstIndex(where: { lyrics.quality > $0.quality }) {
             searchResult.insert(lyrics, at: idx)
         } else {
             searchResult.append(lyrics)
         }
-        DispatchQueue.main.async {
-            self.tableView.reloadData()
+        tableView.reloadData()
+        if let selectedLyrics = selectedLyrics,
+            let selectedRow = searchResult.firstIndex(where: { $0 === selectedLyrics }) {
+            tableView.selectRowIndexes(IndexSet(integer: selectedRow), byExtendingSelection: false)
         }
     }
     
@@ -137,7 +174,8 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     }
     
     func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
-        guard let ident = tableColumn?.identifier else {
+        guard searchResult.indices.contains(row),
+            let ident = tableColumn?.identifier else {
             return nil
         }
         
@@ -155,7 +193,9 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     
     func tableViewSelectionDidChange(_ notification: Notification) {
         let index = tableView.selectedRow
-        guard index >= 0 else {
+        guard searchResult.indices.contains(index) else {
+            lyricsPreviewTextView.string = " "
+            artworkView.image = #imageLiteral(resourceName: "missing_artwork")
             return
         }
         if self.hideLrcPreviewConstraint?.isActive == true {
@@ -166,7 +206,11 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     }
     
     func tableView(_ tableView: NSTableView, writeRowsWith rowIndexes: IndexSet, to pboard: NSPasteboard) -> Bool {
-        let lrcContent = searchResult[rowIndexes.first!].description
+        guard let index = rowIndexes.first,
+            searchResult.indices.contains(index) else {
+            return false
+        }
+        let lrcContent = searchResult[index].description
         pboard.declareTypes([.string, .filePromise], owner: self)
         pboard.setString(lrcContent, forType: .string)
         pboard.setPropertyList(["lrc"], forType: .filePromise)
@@ -175,6 +219,9 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     
     func tableView(_ tableView: NSTableView, namesOfPromisedFilesDroppedAtDestination dropDestination: URL, forDraggedRowsWith indexSet: IndexSet) -> [String] {
         return indexSet.compactMap { index -> String? in
+            guard searchResult.indices.contains(index) else {
+                return nil
+            }
             let fileName = searchResult[index].fileName ?? "Unknown"
             
             let destURL = dropDestination.appendingPathComponent(fileName)
@@ -202,8 +249,11 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
     }
     
     private func expandPreview() {
+        guard let window = view.window else {
+            return
+        }
         let expandingHeight = -view.subviews.reduce(0) { min($0, $1.frame.minY) }
-        let windowFrame = self.view.window!.frame.with {
+        let windowFrame = window.frame.with {
             $0.size.height += expandingHeight
             $0.origin.y -= expandingHeight
         }
@@ -212,21 +262,22 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
             context.allowsImplicitAnimation = true
             context.timingFunction = .swiftOut
             hideLrcPreviewConstraint?.animator().isActive = false
-            view.window?.setFrame(windowFrame, display: false, animate: true)
+            window.setFrame(windowFrame, display: false, animate: true)
             view.needsUpdateConstraints = true
             view.needsLayout = true
             view.layoutSubtreeIfNeeded()
-        }, completionHandler: {
-            self.normalConstraint.isActive = true
+        }, completionHandler: { [weak self] in
+            self?.normalConstraint.isActive = true
         })
     }
     
     private func updateImage() {
         let index = tableView.selectedRow
-        guard index >= 0 else {
+        guard searchResult.indices.contains(index) else {
+            artworkView.image = #imageLiteral(resourceName: "missing_artwork")
             return
         }
-        guard let url = self.searchResult[index].metadata.artworkURL else {
+        guard let url = searchResult[index].metadata.artworkURL else {
             artworkView.image = #imageLiteral(resourceName: "missing_artwork")
             return
         }
@@ -237,30 +288,49 @@ class SearchLyricsViewController: NSViewController, NSTableViewDelegate, NSTable
         }
         
         artworkView.image = #imageLiteral(resourceName: "missing_artwork")
-        DispatchQueue.global().async {
+        let generation = searchGeneration
+        DispatchQueue.global().async { [weak self] in
             guard let image = NSImage(contentsOf: url) else {
                 return
             }
-            self.imageCache.setObject(image, forKey: url as NSURL)
-            DispatchQueue.main.async {
-                self.updateImage()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self,
+                    self.searchGeneration == generation else {
+                    return
+                }
+                self.imageCache.setObject(image, forKey: url as NSURL)
+                let selectedRow = self.tableView.selectedRow
+                guard self.searchResult.indices.contains(selectedRow),
+                    self.searchResult[selectedRow].metadata.artworkURL == url else {
+                    return
+                }
+                self.artworkView.image = image
             }
         }
     }
 
     private func clearSearchState() {
+        searchGeneration &+= 1
         searchCanceller?.cancel()
         searchCanceller = nil
         progressObservation?.invalidate()
         progressObservation = nil
         searchRequest = nil
         searchResult = []
+        searchResultKeys.removeAll(keepingCapacity: true)
         searchArtist = ""
         searchTitle = ""
         artworkView.image = #imageLiteral(resourceName: "missing_artwork")
         lyricsPreviewTextView.string = " "
         progressIndicator.stopAnimation(nil)
         tableView.reloadData()
+    }
+
+    private func searchResultKey(for lyrics: Lyrics) -> String {
+        if let serviceToken = lyrics.metadata.serviceToken, !serviceToken.isEmpty {
+            return "\(lyrics.metadata.service?.rawValue ?? ""):\(serviceToken)"
+        }
+        return lyrics.description
     }
 
 }

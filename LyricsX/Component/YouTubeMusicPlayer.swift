@@ -25,6 +25,15 @@ extension Notification.Name {
     )
 }
 
+final class YouTubeMusicSearchContext: NSObject {
+    let searchSeeds: [LyricsSearchSeed]
+
+    init(searchSeeds: [LyricsSearchSeed]) {
+        self.searchSeeds = searchSeeds
+        super.init()
+    }
+}
+
 extension MusicPlayers {
     final class YouTubeMusic: ObservableObject {
         let objectWillChange = ObservableObjectPublisher()
@@ -68,6 +77,7 @@ extension MusicPlayers {
         private var artworkRequestKey: String?
         private var artworkRetryAfter: [URL: Date] = [:]
         private var observationPolicy = YouTubeMusicObservationPolicy()
+        private var searchSeedTracker = YouTubeMusicSearchSeedTracker()
         private var refreshScheduledOrRunning = false
         private var refreshRequestedWhileBusy = false
 
@@ -127,13 +137,32 @@ extension MusicPlayers {
             let existingArtwork = currentState.track?.id == snapshot.trackID
                 ? currentState.track?.artwork
                 : nil
+            let existingTrack = currentState.track?.id == snapshot.trackID
+                ? currentState.track
+                : nil
+            let rawSearchSeeds = snapshot.searchSeeds.flatMap { seeds in
+                seeds.isEmpty ? nil : seeds
+            } ?? [
+                LyricsSearchSeed(title: snapshot.title, artist: snapshot.artist),
+            ]
+            let domPrimary = snapshot.domTitle.map {
+                LyricsSearchSeed(title: $0, artist: snapshot.domArtist)
+            }
+            let searchSeeds = searchSeedTracker.update(
+                trackID: snapshot.trackID,
+                candidates: rawSearchSeeds,
+                domPrimary: domPrimary
+            )
+            let primarySeed = searchSeeds.first
+            let metadataIsReady = primarySeed != nil
             let track = MusicTrack(
                 id: snapshot.trackID,
-                title: snapshot.title,
-                album: snapshot.album,
-                artist: snapshot.artist,
-                duration: snapshot.duration,
-                artwork: cachedArtwork ?? existingArtwork
+                title: primarySeed?.title,
+                album: metadataIsReady ? snapshot.album ?? existingTrack?.album : nil,
+                artist: primarySeed?.artist,
+                duration: snapshot.duration ?? existingTrack?.duration,
+                artwork: metadataIsReady ? cachedArtwork ?? existingArtwork : nil,
+                originalTrack: YouTubeMusicSearchContext(searchSeeds: searchSeeds)
             )
             let trackChanged = tracksDiffer(currentState.track, track)
             if trackChanged {
@@ -154,7 +183,8 @@ extension MusicPlayers {
                     snapshotTime: playbackTime,
                     timeSinceLastPlayingSynchronization: lastPlayingSynchronizationDate.map {
                         now.timeIntervalSince($0)
-                    }
+                    },
+                    snapshotPrecision: snapshot.playbackTimePrecision
                 )
             case (.paused, .paused) where !trackChanged:
                 shouldUpdateState = YouTubeMusicPlaybackUpdatePolicy.shouldUpdatePosition(
@@ -177,7 +207,11 @@ extension MusicPlayers {
             } else if !snapshot.isPlaying {
                 lastPlayingSynchronizationDate = nil
             }
-            requestArtwork(for: snapshot.trackID, at: artworkURL)
+            if metadataIsReady {
+                requestArtwork(for: snapshot.trackID, at: artworkURL)
+            } else {
+                cancelArtworkRequest()
+            }
         }
 
         private func publicStateSnapshot() -> (track: MusicTrack?, playbackState: PlaybackState) {
@@ -218,7 +252,9 @@ extension MusicPlayers {
                     title: $0.title,
                     album: $0.album,
                     artist: $0.artist,
-                    duration: $0.duration
+                    duration: $0.duration,
+                    searchSeeds: ($0.originalTrack as? YouTubeMusicSearchContext)?
+                        .searchSeeds ?? []
                 )
             }
         }
@@ -242,7 +278,7 @@ extension MusicPlayers {
             artworkRequestKey = requestKey
 
             var request = URLRequest(url: url, timeoutInterval: 5)
-            request.setValue("LyricsX/1.7.0", forHTTPHeaderField: "User-Agent")
+            request.setValue("LyricsX/1.7.1", forHTTPHeaderField: "User-Agent")
             let task = artworkSession.dataTask(with: request) { [weak self] data, response, error in
                 let statusCode = (response as? HTTPURLResponse)?.statusCode
                 let image = error == nil && statusCode.map({ 200 ..< 300 ~= $0 }) == true
@@ -308,6 +344,7 @@ extension MusicPlayers {
         private func clearPlayerState() {
             activeTabID = nil
             lastPlayingSynchronizationDate = nil
+            searchSeedTracker.reset()
             cancelArtworkRequest()
             publishPublicState(track: nil, playbackState: .stopped)
         }
@@ -458,6 +495,90 @@ extension MusicPlayers.YouTubeMusic: MusicPlayerProtocol {
 
 private final class ChromeYouTubeMusicBridge {
     private static let snapshotResponseMarker = "LyricsXYouTubeMusicSnapshotV1"
+    private static let mediaSelectionJavaScript = #"""
+    const mediaElements = Array.from(document.querySelectorAll('video, audio'));
+    const loadedMedia = mediaElements.filter(candidate => Boolean(candidate.currentSrc));
+    const isMainPlayerMedia = candidate =>
+      Boolean(candidate.closest('ytmusic-player, #movie_player'));
+    const rankMedia = candidate => [
+      candidate.ended ? 0 : 1,
+      isMainPlayerMedia(candidate) ? 1 : 0,
+      Number.isFinite(candidate.readyState) ? Math.max(0, candidate.readyState) : 0,
+      Number.isFinite(candidate.currentTime) && candidate.currentTime > 0 ? 1 : 0
+    ];
+    const isHigherRanked = (candidate, current) => {
+      const candidateRank = rankMedia(candidate);
+      const currentRank = rankMedia(current);
+      for (let index = 0; index < candidateRank.length; index += 1) {
+        if (candidateRank[index] !== currentRank[index]) {
+          return candidateRank[index] > currentRank[index];
+        }
+      }
+      return false;
+    };
+    const playingMedia = loadedMedia.filter(
+      candidate => !candidate.paused && !candidate.ended
+    );
+    const eligibleMedia = playingMedia.length ? playingMedia : loadedMedia;
+    const media = eligibleMedia.reduce(
+        (current, candidate) =>
+          !current || isHigherRanked(candidate, current) ? candidate : current,
+        null
+      );
+    """#
+    private static let trackTimingJavaScript = #"""
+    const parseClock = value => {
+      if (typeof value !== 'string') return null;
+      const trimmedValue = value.trim();
+      if (!trimmedValue) return null;
+      const rawFields = trimmedValue.split(':');
+      if (rawFields.some(field => !field.trim())) return null;
+      const fields = rawFields.map(Number);
+      if (fields.some(field => !Number.isFinite(field) || field < 0)) {
+        return null;
+      }
+      return fields.reduce((total, field) => total * 60 + field, 0);
+    };
+    const numericAttribute = (element, name, positive) => {
+      const rawValue = element?.getAttribute(name);
+      if (rawValue === null || rawValue === undefined || rawValue === '') return null;
+      const value = Number(rawValue);
+      if (!Number.isFinite(value) || (positive ? value <= 0 : value < 0)) return null;
+      return value;
+    };
+    const progressBar = document.querySelector('ytmusic-player-bar #progress-bar');
+    const progressTime = numericAttribute(progressBar, 'aria-valuenow', false);
+    const progressDuration = numericAttribute(progressBar, 'aria-valuemax', true);
+    const timeParts = (
+      document.querySelector('ytmusic-player-bar .time-info')?.textContent || ''
+    ).split('/');
+    const textTime = parseClock(timeParts[0]);
+    const textDuration = parseClock(timeParts[1]);
+    const mediaTime = Number.isFinite(media.currentTime) ? Math.max(0, media.currentTime) : 0;
+    const mediaDuration =
+      Number.isFinite(media.duration) && media.duration > 0 ? media.duration : null;
+    const discreteTrackTime = progressTime ?? textTime;
+    const discreteTrackDuration = progressTime !== null
+      ? progressDuration ?? textDuration
+      : textTime !== null
+        ? textDuration ?? progressDuration
+        : null;
+    const mediaMatchesTrack = discreteTrackTime !== null
+      && discreteTrackDuration !== null
+      && mediaDuration !== null
+      && Math.abs(mediaDuration - discreteTrackDuration) <= 2
+      && mediaTime <= discreteTrackDuration + 2;
+    const rawTrackTime = mediaMatchesTrack || discreteTrackTime === null
+      ? mediaTime
+      : discreteTrackTime;
+    const trackDuration = discreteTrackTime === null
+      ? mediaDuration
+      : discreteTrackDuration;
+    const trackPlaybackTime =
+      trackDuration === null ? rawTrackTime : Math.min(rawTrackTime, trackDuration);
+    const playbackTimePrecision =
+      discreteTrackTime === null || mediaMatchesTrack ? null : 1;
+    """#
 
     struct SnapshotResult {
         let tabID: String
@@ -491,8 +612,8 @@ private final class ChromeYouTubeMusicBridge {
                 return #"""
                 (() => {
                   if (location.origin !== 'https://music.youtube.com') return '';
-                  const media = document.querySelector('video, audio');
-                  if (!media || !media.currentSrc) return '';
+                  \#(ChromeYouTubeMusicBridge.mediaSelectionJavaScript)
+                  if (!media) return '';
                   const button = document.querySelector('ytmusic-player-bar #play-pause-button');
                   if (button) button.click();
                   else if (media.paused) media.play();
@@ -509,11 +630,47 @@ private final class ChromeYouTubeMusicBridge {
                 return #"""
                 (() => {
                   if (location.origin !== 'https://music.youtube.com') return '';
-                  const media = document.querySelector('video, audio');
-                  if (!media || !media.currentSrc) return '';
-                  const duration = Number.isFinite(media.duration) ? media.duration : \#(safeTime);
-                  const target = Math.min(\#(safeTime), duration);
-                  media.currentTime = target;
+                  \#(ChromeYouTubeMusicBridge.mediaSelectionJavaScript)
+                  if (!media) return '';
+                  \#(ChromeYouTubeMusicBridge.trackTimingJavaScript)
+                  const target = trackDuration === null
+                    ? \#(safeTime)
+                    : Math.min(\#(safeTime), trackDuration);
+                  if (progressBar && trackDuration !== null) {
+                    const previousValueAttribute = progressBar.getAttribute('value');
+                    const previousAriaValue = progressBar.getAttribute('aria-valuenow');
+                    const hadOwnValue = Object.prototype.hasOwnProperty.call(
+                      progressBar,
+                      'value'
+                    );
+                    const previousValue = progressBar.value;
+                    progressBar.value = target;
+                    progressBar.setAttribute('value', String(target));
+                    progressBar.setAttribute('aria-valuenow', String(target));
+                    progressBar.dispatchEvent(
+                      new Event('change', { bubbles: true, composed: true })
+                    );
+                    if (hadOwnValue) progressBar.value = previousValue;
+                    else delete progressBar.value;
+                    if (previousValueAttribute === null) {
+                      progressBar.removeAttribute('value');
+                    } else {
+                      progressBar.setAttribute('value', previousValueAttribute);
+                    }
+                    if (previousAriaValue === null) {
+                      progressBar.removeAttribute('aria-valuenow');
+                    } else {
+                      progressBar.setAttribute('aria-valuenow', previousAriaValue);
+                    }
+                    return 'ok';
+                  }
+                  const shiftedMediaTime = Math.max(
+                    0,
+                    mediaTime + target - trackPlaybackTime
+                  );
+                  media.currentTime = mediaDuration === null
+                    ? shiftedMediaTime
+                    : Math.min(shiftedMediaTime, mediaDuration);
                   return 'ok';
                 })()
                 """#
@@ -524,8 +681,8 @@ private final class ChromeYouTubeMusicBridge {
             #"""
             (() => {
               if (location.origin !== 'https://music.youtube.com') return '';
-              const media = document.querySelector('video, audio');
-              if (!media || !media.currentSrc) return '';
+              \#(ChromeYouTubeMusicBridge.mediaSelectionJavaScript)
+              if (!media) return '';
               \#(action);
               return 'ok';
             })()
@@ -820,24 +977,55 @@ private final class ChromeYouTubeMusicBridge {
     private static let snapshotJavaScript = #"""
     (() => {
       if (location.origin !== 'https://music.youtube.com') return '';
-      const media = document.querySelector('video, audio');
+      \#(mediaSelectionJavaScript)
+      if (!media) return '';
+      \#(trackTimingJavaScript)
       const metadata = navigator.mediaSession && navigator.mediaSession.metadata;
-      const text = selector => document.querySelector(selector)?.textContent?.trim() || null;
-      const title = metadata?.title || text('ytmusic-player-bar .title.ytmusic-player-bar');
-      if (!media || !media.currentSrc || !title) return '';
+      const cleanText = value => {
+        if (typeof value !== 'string') return null;
+        const cleaned = value.replace(/\s+/g, ' ').trim();
+        return cleaned || null;
+      };
+      const text = selector => cleanText(document.querySelector(selector)?.textContent);
+      const domTitle = text('ytmusic-player-bar .title.ytmusic-player-bar');
+      const domArtist = text(
+        'ytmusic-player-bar .byline.ytmusic-player-bar a:nth-of-type(1)'
+      );
+      const mediaTitle = cleanText(metadata?.title);
+      const mediaArtist = cleanText(metadata?.artist);
+      const title = domTitle || mediaTitle;
+      const artist = domArtist || mediaArtist;
+      if (!title) return '';
+      const canonicalSeedValue = value =>
+        (value || '').normalize('NFKC').toLocaleLowerCase();
+      const searchSeeds = [];
+      const seedKeys = new Set();
+      for (const seed of [
+        { title: domTitle, artist: domArtist },
+        { title: mediaTitle, artist: mediaArtist }
+      ]) {
+        if (!seed.title) continue;
+        const key = canonicalSeedValue(seed.title) + '\u001f' +
+          canonicalSeedValue(seed.artist);
+        if (seedKeys.has(key)) continue;
+        seedKeys.add(key);
+        searchSeeds.push(seed);
+      }
       const artwork = metadata?.artwork ? Array.from(metadata.artwork) : [];
-      const duration = Number.isFinite(media.duration) && media.duration > 0 ? media.duration : null;
-      const playbackTime = Number.isFinite(media.currentTime) ? Math.max(0, media.currentTime) : 0;
       const payload = {
         url: location.href,
         videoID: new URL(location.href).searchParams.get('v'),
         title,
-        artist: metadata?.artist || text('ytmusic-player-bar .byline.ytmusic-player-bar a:nth-of-type(1)'),
+        artist,
+        domTitle,
+        domArtist,
         album: metadata?.album || text('ytmusic-player-bar .byline.ytmusic-player-bar a:nth-of-type(2)'),
-        duration,
-        playbackTime,
+        duration: trackDuration,
+        playbackTime: trackPlaybackTime,
+        playbackTimePrecision,
         isPlaying: !media.paused && !media.ended,
-        artworkURL: artwork.length ? artwork[artwork.length - 1].src : null
+        artworkURL: artwork.length ? artwork[artwork.length - 1].src : null,
+        searchSeeds
       };
       return JSON.stringify(payload);
     })()

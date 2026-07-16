@@ -1325,7 +1325,7 @@
 			repositoryURL = "https://github.com/akirakusen/LyricsKit";
 			requirement = {
 				kind = revision;
-				revision = 265c70ba189391c4d7d6aa3176a8dad6f684c497;
+				revision = fc169614ecd38a5c2fe03efd41105322e0266149;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

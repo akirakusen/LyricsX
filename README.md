@@ -12,7 +12,7 @@ Ultimate lyrics app for macOS.
 
 ## Installation
 
-Download the [LyricsX 1.7.0 universal DMG](https://github.com/akirakusen/LyricsX/releases/download/v1.7.0/LyricsX-1.7.0-universal.dmg).
+Download the [LyricsX 1.7.1 universal DMG](https://github.com/akirakusen/LyricsX/releases/download/v1.7.1/LyricsX-1.7.1-universal.dmg).
 
 This community preview is not notarized. After copying LyricsX to Applications, Control-click it and choose **Open** the first time.
 

@@ -112,7 +112,9 @@ class KaraokeLyricsWindowController: NSWindowController {
     }
     
     private func updateWindowFrame(toScreen: NSScreen? = nil, animate: Bool) {
-        let screen = toScreen ?? window?.screen ?? NSScreen.screens[0]
+        guard let screen = toScreen ?? window?.screen ?? NSScreen.screens.first else {
+            return
+        }
         let fullScreen = screen.isFullScreen || defaults.bool(forKey: "DesktopLyricsIgnoreSafeArea")
         let frame = fullScreen ? screen.frame : screen.visibleFrame
         window?.setFrame(frame, display: false, animate: animate)
@@ -123,7 +125,8 @@ class KaraokeLyricsWindowController: NSWindowController {
         guard defaults[.desktopLyricsEnabled],
             !defaults[.disableLyricsWhenPaused] || selectedPlayer.playbackState.isPlaying,
             let lyrics = AppController.shared.currentLyrics,
-            let index = AppController.shared.currentLineIndex else {
+            let index = AppController.shared.currentLineIndex,
+            lyrics.lines.indices.contains(index) else {
                 DispatchQueue.main.async {
                     self.lyricsView.displayLrc("", secondLine: "")
                 }
@@ -166,16 +169,19 @@ class KaraokeLyricsWindowController: NSWindowController {
                 secondLine = converter.convert(secondLine)
             }
         }
+        let playbackTime = selectedPlayer.playbackTime
+        let isPlaying = selectedPlayer.playbackState.isPlaying
+        let timeDelay = lyrics.adjustedTimeDelay
         
         DispatchQueue.main.async {
             self.lyricsView.displayLrc(firstLine, secondLine: secondLine)
             if let upperTextField = self.lyricsView.displayLine1,
                 let timetag = lrc.attachments.timetag {
-                let position = selectedPlayer.playbackTime
-                let timeDelay = AppController.shared.currentLyrics?.adjustedTimeDelay ?? 0
-                let progress = timetag.tags.map { ($0.time + lrc.position - timeDelay - position, $0.index) }
+                let progress = timetag.tags.map {
+                    ($0.time + lrc.position - timeDelay - playbackTime, $0.index)
+                }
                 upperTextField.setProgressAnimation(color: self.lyricsView.progressColor, progress: progress)
-                if !selectedPlayer.playbackState.isPlaying {
+                if !isPlaying {
                     upperTextField.pauseProgressAnimation()
                 }
             }

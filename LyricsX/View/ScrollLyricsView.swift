@@ -93,7 +93,7 @@ class ScrollLyricsView: NSScrollView {
         textView.string = lrcContent
         highlightedRange = nil
         let range = textView.string.fullRange
-        let font = NSFont(name: fontName, size: fontSize)!
+        let font = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
         let style = NSMutableParagraphStyle().with {
             $0.alignment = .center
         }
@@ -129,13 +129,25 @@ class ScrollLyricsView: NSScrollView {
     
     override func scrollWheel(with event: NSEvent) {
         super.scrollWheel(with: event)
-        switch event.momentumPhase {
-        case .began:
+
+        let phase = event.phase
+        let momentumPhase = event.momentumPhase
+        let isActivelyScrolling = phase.contains(.began)
+            || phase.contains(.changed)
+            || momentumPhase.contains(.began)
+            || momentumPhase.contains(.changed)
+        if isActivelyScrolling {
             delegate?.scrollWheelDidStartScroll()
-        case .ended, .cancelled:
+            return
+        }
+        if momentumPhase.contains(.ended) || momentumPhase.contains(.cancelled)
+            || momentumPhase.isEmpty
+                && (phase.contains(.ended) || phase.contains(.cancelled)) {
             delegate?.scrollWheelDidEndScroll()
-        default:
-            break
+        } else if phase.isEmpty && momentumPhase.isEmpty {
+            // Traditional mouse wheels do not report gesture phases.
+            delegate?.scrollWheelDidStartScroll()
+            delegate?.scrollWheelDidEndScroll()
         }
     }
     
@@ -221,7 +233,7 @@ class ScrollLyricsView: NSScrollView {
     
     func updateFont() {
         let range = textView.string.fullRange
-        let font = NSFont(name: fontName, size: fontSize)!
+        let font = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
         textView.textStorage?.addAttribute(.font, value: font, range: range)
     }
     
